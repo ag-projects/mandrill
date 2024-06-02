@@ -33,5 +33,5 @@ build/
 ### VS Code ###
 .vscode/
 /mandrill-api/MandrillApi/dependency-reduced-pom.xml
-/mandrill-api/.aws-sam/cache/
-/mandrill-api/.aws-sam/deps/
+/mandrill-api/.aws-sam/cache/*
+/mandrill-api/.aws-sam/deps/*
