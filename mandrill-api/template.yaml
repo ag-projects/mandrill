@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  mandrill-api
+
+  Sample SAM Template for mandrill-api
+
+
+#Parameters:
+#  StageName:
+#    Type: String
+#    Default: prod
+#    Description: Allowed envs for Mandrill Webhooks Lambda Function
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 512
+    Runtime: java21
+    Architectures:
+      - x86_64
+
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  MandrillHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: MandrillApi
+      Handler: com.quickfee.lambda.MandrillHandler::handleRequest
+
+      Events:
+        TestWebhookPostEvent:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post
+
+        TestWebhookHeadEvent:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: head
+
+  MandrillHandlerFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !Ref MandrillHandlerFunction
+      AuthType: NONE
+
+  PermissionForURLInvoke:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunctionUrl'
+      FunctionName: !Ref MandrillHandlerFunction
+      FunctionUrlAuthType: NONE
+      Principal: '*'
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  MandrillApi:
+    Description: API Gateway endpoint URL for prod Mandrill webhooks
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod/webhook"
+  MandrillHandlerFunction:
+    Description: Mandrill Handler Lambda Function ARN
+    Value: !GetAtt MandrillHandlerFunction.Arn
+  MandrillHandlerFunctionIamRole:
+    Description: Implicit IAM Role created for Mandrill Handler Function
+    Value: !GetAtt MandrillHandlerFunctionRole.Arn
